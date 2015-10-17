@@ -30,3 +30,10 @@ EOF
 chmod 755 /bin/sbt
 
 echo "cd /vagrant" >> /home/vagrant/.bashrc
+
+echo "deb http://http.debian.net/debian jessie-backports main" | sudo tee -a /etc/apt/sources.list
+apt-get update
+apt-get -y install libncurses5-dev rsync unzip bc
+apt-get -t jessie-backports -y install docker.io
+sudo usermod -a -G docker vagrant
+sudo service docker start

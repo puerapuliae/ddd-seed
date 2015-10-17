@@ -1,49 +1,57 @@
-name := "scala-seed"
+enablePlugins(JavaAppPackaging)
+enablePlugins(DockerPlugin)
 
-organization := "net.puerapuliae"
-
-licenses += ("Apache-2.0", url("http://www.apache.org/licenses/LICENSE-2.0"))
-
-scalaVersion := "2.11.6"
-
-scalacOptions ++= Seq(
-  "-deprecation"
-  ,"-unchecked"
-  ,"-encoding", "UTF-8"
-  ,"-Xlint"
-  ,"-Yclosure-elim"
-  ,"-Yinline"
-  ,"-Xverify"
-  ,"-feature"
-  ,"-language:postfixOps"
-  ,"-optimise"
+lazy val commonSettings = Seq(
+  organization := "net.puerapuliae",
+  version := "0.1.0",
+  scalaVersion := "2.11.6",
+  scalacOptions ++= Seq(
+    "-deprecation"
+    ,"-unchecked"
+    ,"-encoding", "UTF-8"
+    ,"-Xlint"
+    ,"-Yclosure-elim"
+    ,"-Yinline"
+    ,"-Xverify"
+    ,"-feature"
+    ,"-language:postfixOps"
+    ,"-optimise"
+  ),
+  libraryDependencies ++= Seq (
+    "org.scalatest" %% "scalatest" % "2.2.4" % "test",
+    "org.scalacheck" %% "scalacheck" % "1.12.2",
+    "org.rocksdb" % "rocksdbjni" % "3.10.1"
+  ),
+  fork := true,
+  scalaSource in Compile := baseDirectory.value / "src",
+  scalaSource in Test := baseDirectory.value / "src",
+  excludeFilter in (Compile, unmanagedSources) := HiddenFileFilter || "*_test.scala",
+  excludeFilter in (Test, unmanagedSources) := HiddenFileFilter,
+  resourceDirectory in Compile := baseDirectory.value / "resources",
+  resourceDirectory in Test := baseDirectory.value / "resources",
+  defaultLinuxInstallLocation in Docker := "/opt/docker",
+  dockerExposedPorts := Seq(3000, 8080),
+  dockerBaseImage := "puerapuliae/java"
 )
 
-javacOptions ++= Seq("-Xlint:unchecked", "-Xlint:deprecation")
+lazy val root = (project in file(".")).
+  aggregate(domain, application, infrastructure).
+  settings(commonSettings: _*).
+  settings(
+      name := "ddd-seed"
+  )
 
-libraryDependencies ++= Seq (
-  "org.scalatest" %% "scalatest" % "2.2.4" % "test",
-  "org.scalacheck" %% "scalacheck" % "1.12.2"
-)
+lazy val domain = project.settings(commonSettings: _*)
 
-fork := true
+lazy val application = project.
+  settings(commonSettings: _*).
+  dependsOn(domain, infrastructure)
 
-testOptions in Test += Tests.Argument("-oDS")
-
-resolvers ++= Seq(
-  Resolver.typesafeRepo("snapshots")
-)
-
-scalaSource in Compile := baseDirectory.value / "src"
-
-scalaSource in Test := baseDirectory.value / "src"
-
-excludeFilter in (Compile, unmanagedSources) := HiddenFileFilter || "*_test.scala"
-
-excludeFilter in (Test, unmanagedSources) := HiddenFileFilter
-
-resourceDirectory in Compile := baseDirectory.value / "resources"
-
-resourceDirectory in Test := baseDirectory.value / "resources"
-
-scalariformSettings
+lazy val infrastructure = project.
+  settings(commonSettings: _*).
+  settings(
+    libraryDependencies ++= Seq (
+      "com.typesafe.akka" % "akka-http-core-experimental_2.11" % "1.0",
+      "com.typesafe.akka" % "akka-http-experimental_2.11" % "1.0"
+    )
+  )
